@@ -1,0 +1,1426 @@
+---
+title: "ILERI REGRESYON ANALIZI FINAL ODEVI"
+author: "IremKoyunlu121517056"
+date: "16 06 2020"
+output:
+  html_document:
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+<style>
+/* Your other css */
+    body {
+      background-image: url(https://wallpaperaccess.com/full/981549.jpg);
+      background-position: center center;
+      background-attachment: fixed;
+      background-repeat: no-repeat;
+      background-size: 100% 100%;
+    }
+.section .reveal .state-background {
+    background-image: url(https://wallpaperaccess.com/full/981549.jpg);
+    background-position: center center;
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+}
+</style>
+
+<style>
+div.blue pre.r { background-color:lightblue; }
+</style>
+
+<div class = "blue">
+```{r fotograf2, echo=FALSE, message=FALSE, warning=FALSE}
+
+knitr::include_graphics("Vwap1.jpg")
+
+```
+
+# NATIONAL STOCK EXCHANGE 
+
+#### KAYNAK: https://www.kaggle.com/atulanandjha/national-stock-exchange-time-series
+
+```{r veri, message=FALSE, warning=FALSE}
+NSTS=read.csv("C:/Users/CASPER/Desktop/infy_stock.csv", header=T)
+head(NSTS,10)
+
+```
+
+### VERI SETI ACIKLAMASI ;
+
+Ulusal Borsa:Hint bilisim sirketlerinin ulusal borsa veri setidir.
+Hindistan Ulusal Borsasi (NSE) Mumbai, Maharashtra, Hindistan'da bulunan bir Hint borsasidir. Ulusal Menkul Kiymetler Borsasi (NSE) 1992 yilinda yetkisiz bir elektronik borsa olarak kuruldu. Hindistan Hukumeti'nin talebi uzerine onde gelen finans kuruluslari tarafindan tesvik edildi. Hindistan'in ciro ile yaptigi en buyuk borsa. 1994 yilinda elektronik ekran tabanli ticareti baslatti. Daha sonra, 2000 yilinda ulkede turunun ilk ornegi olan endeks futures ve internet ticareti baslatti. 248 gozlem 15 sutun bulunmakta.
+
+#### Degiskenler:
+
+Date: Verilerin kaydedildigi tarih.
+
+Symbol: Stokun NSE (Hindistan Ulusal Borsasi ) sembolu.
+
+Series: Bu hisse senedinin serisi.
+(EQ,BE,BL,BT,GC,IL)
+
+Prev Close: Son gun kapanis noktasi.
+
+Open: Mevcut gun acilis noktasi.
+
+High: Mevcut gunun en yuksek noktasi.
+
+Low: Mevcut gunun en dusuk noktasi.
+
+Last: Son islem gununde belirli bir hisse senedi veya borsa endeksi icin son teklif edilen islem fiyati.
+
+Close: Gecerli gun icin kapanis noktasi.
+
+VWAP: Hacim agirlikli ortalama fiyat anlamina gelir, bir varligin belirli bir zaman araligi icin hacme gore agirligi alinmis ortalama fiyatidir.
+
+Volume: Belirli bir zaman diliminde islem goren menkul kiymet tutari. Her alici icin bir satici var ve her islem toplam hacim sayisina katkida bulunuyor.
+
+Turnover: Hisse senedinin o gune kadar toplam cirosu.
+
+Trades: Hisse senedi alim veya satim sayisi.
+
+Deliverable: Bir grup insandan (bugunden once demat hesabida bu hisseleri olan ve bugun satis yapan) baska bir grup insana (bu hisseleri satin almis olan ve bu hisseleri T+2 gunlerine kadar alacak olan) hareket eden hisse miktari. Demat hesabi(Hindistan Internet Borsasi)).
+
+%Deliverble: Bu hisse senedinin teslimat yuzdesi.
+
+VWAP'yi ozellikle guclu bir gosterge haline getiren ortalama fiyat hesaplamasinda hacmi kullanma seklidir.
+VWAP, hacmin gucuyle fiyat hareketini birlestirerek pratik ve kullanimi kolay bir gosterge yaratir. Alim satim yapanlar VWAP'yi bir trend onaylama ya da giris ve cikis noktalarini belirleme araci olarak kullanabilir.
+VWAP her gunun basinda sifirlanir. Alim satim yapmak istedigimizde, VWAP'in altinda almak ve ustunde satmak karlidir. Fiyatin bugunku degerinin ustunde mi alim yaptik yoksa altinda mi alim yaptik bunu belirlememizi saglar.
+Fiyat VWAP uzerinde ise, satmak icin iyi bir gun ici fiyattir. Fiyat VWAP'in altindaysa, satin almak icin iyi bir gun ici fiyatidir.
+
+#### Degiskenleri Aciklamada Kullanilan Ek Bilgi Kaynaklari:
+
+https://www.investopedia.com/articles/trading/11/trading-with-vwap-mvwap.asp
+https://www.binance.vision/tr/economics/volume-weighted-average-price-vwap-explained
+
+
+```{r ozet, message=FALSE, warning=FALSE}
+summary(NSTS)
+```
+Verimizde duzeltilcek degisken yoktur.
+Verimizi oncelikle test ve train olarak ayiralim.
+
+```{r message=FALSE, warning=FALSE}
+set.seed(2)
+index<-sample(1:nrow(NSTS),round(nrow(NSTS)*0.85)) 
+veritrain<-NSTS[index,] 
+veritest<-NSTS[-index,] 
+```
+
+Regresyon modelimizi kuralim;
+
+VWAP, hacmin gucuyle fiyat hareketini birlestirerek pratik ve kullanimi kolay bir gosterge yaratir. Bagimli degiskenimiz VWAP tir.(Yanit degiskeni)
+Aciklayici degisken olarak da Volume,High,Low,Close,Last kullanarak regresyon modeli kuralim.
+
+```{r model, message=FALSE, warning=FALSE}
+lmod<-lm(VWAP~Volume+
+            High+
+           Low+
+            Close+
+            Last,data=veritrain)
+summary(lmod)
+```
+
+Kurulan regresyon modelinin anlamliligina baktigimizda p value=yaklasik 0 < 0.05 oldugundan kurulan model anlamlidir.
+
+## HATA ILE ILGILI VARSAYIMLAR
+
+#### SABIT VARYANS
+
+Sabit varyansliligin en kullanisli teshis yontemi artiklara (residuals(lmod)) karsilik tahmin (fitted(lmod)) degerlerinin  plotlanmasidir.
+
+```{r message=FALSE, warning=FALSE}
+op = par(bg = "lavender")
+plot(fitted(lmod),residuals(lmod), xlab = "fitted y" ,ylab = "residuals",col="purple",main="Artiklar-Tahmin Grafigi")
+abline(h=0,col="orange")
+
+# Interaktif bir sekilde gorsellestirelim;
+
+library(plotly)
+
+p <- plot_ly(veritrain, x = fitted(lmod), y = residuals(lmod), alpha = 0.3) 
+subplot(
+  add_markers(p, size = 2, name = "default"),
+  add_markers(p, size = 2, sizes = c(1, 248), name = "custom")
+)
+
+#Interaktif plotun gorseli;(Html ciktisini pdf e cevirince gozukmedigi icin ekledik)
+
+knitr::include_graphics("sabitvaryans.png")
+
+
+```
+
+Cizdirdigimiz grafikte sifir etrafinda nasil dagildigini gormek icin h=0 ile yataya cizgi ekledik.
+Grafigimiz bize duzgun bir sekil vermedigi icin sabit varyansli mi diye emin olamiyoruz.
+Guvenilir olmasi icin degisken varyanslilik testlerine de bakmaliyiz.
+
+### DEGISKEN VARYANSLILIK TESTLERI
+
+#### BREUSCH-PAGAN TESTI
+
+H0:Heterosce Dosticity (Degisken Varyanslilik) problemi yok. 
+H1:Heterosce Dosticity (Degisken Varyanslilik) problemi vardir.
+
+```{r message=FALSE, warning=FALSE}
+#install.packages("lmtest")
+library(lmtest)
+bptest(lmod,data=veritrain)
+```
+
+Breusch pagan testimizin sonucuna gore p-value=2.2e-16 yaklasik 0 <0.05 oldugundan H0 hipotezi reddedilir yani heterocedosticity  (degisken varyanslilik) problemi vardir deriz.
+
+#### WHITE TEST
+
+```{r White Test, message=FALSE, warning=FALSE}
+wmod<-lm(residuals(lmod)^2~fitted(lmod)+fitted(lmod)^2,veritrain)
+summary(wmod)
+```
+
+White testimizin sonucuna gore p-value=0.004915 <0.05 oldugundan H0 hipotezi reddedilir yani heterocedosticity  (degisken varyanslilik) problemi vardir.
+
+Varyanlarin homojenligi saglanmamasi durumunda "Yanit degiskeni uzerinde donusum yapmak" veya "Agirlikli En Kucuk Kareler" yontemlerine basvurmaliyiz.
+
+## AGIRLIKLI EN KUCUK KARELER YONTEMI
+
+Siradan en kucuk kareler yontemi, hata varyanslarinin sabit oldugunu varsayar(homoscedasticity). Agirlikli en kucuk kareler yontemi bu varsayim saglanmadigi durumlarda kullanilir. 
+
+Varyansi buyuk olan degiskenin model uzerinde etkisi fazla olur. 
+EKK nin en iyi calisabilmesi icin hata varyansi  σ2i   i=1,2,....n birbirine esit olmasi gerekir. Eger σ2i ler esit degil ise agirlikli en kucuk kareler yontemine gecmeliyiz.
+
+Her bir  σ2i varyansina karsilik wi= 1/σ2i agirligini tanimlariz.(Agirliklari 1/σ2i almamizin sebebi hepsinin varsayansini 1 e ve birbirlerine esitlemeye calismamizdir. σ2i*(1/σ2i))
+
+Bu sekilde agirligi buyuk olanin agirligini alip, agirligi kucuk olana agirlik yukluyoruz.
+Buradaki zorluk σ2i parametresinin bilinmemesinden kaynaklanir ve w matrisi kolay belirlenemez.
+
+Agirliklari belirlemek icin ilk olarak  EKK regresyon modeli kurulur artiklar elde edilir. Agirliklar belirlendikten sonra agirliklandirilmis EKK kullanilir. Regresyon modeli uzerinden artiklar hesaplanip agirlik incelemesi yapilir. Gercekten kullanilan agirlikla varyans homojen hale gelmis mi diye bakilir. Eger varyans homojenligi saglanmamissa tekrar agirliklandirma yapilir buna iteratif agirliklandirma denir. 
+
+Bazi olasi varyans ve standart sapma fonksiyonu tahminleri:
+
+1) Aciklayici degiskenlere karsilik artiklarin grafigini cizdirip megafon sekli varmi diye bakilir. Eger megafon sekli var ise aciklayici degiskenler  ile mutlak artiklarin arasinda regresyon modeli kurulur. Bu regresyon modeli uzerinden tahmin degeri elde edilir. Bu elde elilen tahmin degerlerini σi yerine kullaniriz. Agirliklar da 1/σ2i diye olusturulur.
+
+2) Ilk basta kurulan EKK modelindeki tahmin edilen yanitlara (y sapkalara) karsilik ei lerin grafigi megafon seklinde ise artiklarin mutlak degerine karsilik y sapkalarin regresyon modeli kurulur. Bu kurulan modelden elde edilen tahmin degerlerini σi yerine kullaniriz. Agirliklari da wi= 1/σ2i seklinde olustururuz.
+
+3) Aciklayici degiskene karsi ei kare grafigi artan seklindeyse ei karelere karsilik o aciklayici degiskenin regresyon modeli kurulur. Bu modelin tahminlerini σ2i yerine kullaniriz. Agirliklari da  wi= 1/σ2i seklinde olustururuz.
+
+4) Tahmin edilen yanitlara (y sapka) karsi ei kare grafigi artan seklindeyse ei karelere karsilik tahmin edilen yanitlara regresyon modeli kurulur. Bu modelden elde edilen tahminler σ2i tahminleri olarak kullanilir. Agirliklari da  wi= 1/σ2i seklinde olustururuz.
+
+Bunlardan hangisi daha uygun gorulurse agirlik o sekilde belirlenmelidir.
+Simdi verimiz uzerinde bu anlatilanlari yapmaya baslayalim.
+
+```{r message=FALSE, warning=FALSE}
+library(ggplot2) 
+veritrain$artik<-(residuals(lmod)) #EKK modelinden elde edilen artiklar (residuals)
+veritrain$tahmin<-predict(lmod) #EKK modelinden elde edilen tahminler (prediction)
+head(veritrain) 
+```
+
+EKK modelimizdeki elde edilen artiklar ve tahmin degerlerini verimize degisken olarak ekledik.
+
+Simdi "Bazi olasi varyans ve standart sapma fonksiyonu tahminleri" nden birincisini inceleyelim.
+
+1) Aciklayici degiskenlere karsilik artiklarin grafigini cizdirip megafon sekli varmi diye bakilir. Eger megafon sekli var ise aciklayici degiskenler ile mutlak artiklarin arasinda regresyon modeli kurulur. Bu regresyon modeli uzerinden tahmin degeri elde edilir. Bu elde elilen tahmin degerlerini σi yerine kullaniriz. Agirliklar da 1/σ2i diye olusturulur.
+
+```{r message=FALSE, warning=FALSE}
+op = par(bg = "azure")
+pairs(~artik+Volume+
+            High+
+           Low+
+            Close+
+            Last+tahmin,data=veritrain, main="Temel Dagilim Grafigi Matrisi")
+```
+
+Artiklar ile Volume sacinim grafigi megafon seklindedir .Bu bagimsiz degisken ile artiklarin mutlak degeri arasinda regresyon modeli kuralim.
+
+```{r message=FALSE, warning=FALSE}
+
+model1<-lm(abs(veritrain$artik)~Volume,data=veritrain)
+           
+weights1<-1/(predict(model1))^2 # agirliklar wi= 1/σ2i
+veritrain<-veritrain[, -c(16,17)]
+
+weightedleastsquaremod1<-lm(VWAP~Volume+
+            High+
+           Low+
+            Close+
+            Last, data= veritrain, weights = weights1)
+
+summary(weightedleastsquaremod1)
+```
+
+Summary kodumuza baktigimizda Residual standard error: 1.458 ve Adjusted R-squared: 0.9999 cikmistir.
+
+Simdi "Bazi olasi varyans ve standart sapma fonksiyonu tahminleri" nden ikincisini inceleyelim.
+
+2) Ilk basta kurulan EKK modelindeki tahmin edilen yanitlara (y sapkalara) karsilik ei lerin grafigi megafon seklinde ise artiklarin mutlak degerine karsilik y sapkalarin regresyon modeli kurulur. Bu kurulan modelden elde edilen tahmin degerlerini σi yerine kullaniriz. Agirliklari da wi= 1/σ2i seklinde olustururuz.
+
+```{r message=FALSE, warning=FALSE}
+library(ggplot2) 
+veritrain$artik<-(residuals(lmod)) #EKK modelinden elde edilen artiklar (residuals)
+veritrain$tahmin<-predict(lmod) #EKK modelinden elde edilen tahminler (prediction)
+head(veritrain) 
+```
+
+```{r message=FALSE, warning=FALSE}
+op = par(bg = "honeydew")
+pairs(artik~tahmin,data=veritrain, main="Temel Dagilim Grafigi Matrisi")
+```
+
+Artiklar ile tahminlerin  sacinim grafigi megafon seklinde degildir sonuc olarak bu yontemi verimizde kullanamiyoruz. 
+
+Simdi "Bazi olasi varyans ve standart sapma fonkiyonu tahminleri" nden ucuncusunu inceleyelim;
+
+3) Aciklayici degiskene karsi ei kare grafigi artan seklindeyse ei karelere karsilik o aciklayici degiskenin regresyon modeli kurulur. Bu modelin tahminlerini σ2i yerine kullaniriz. Agirliklari da  wi= 1/σ2i seklinde olustururuz.
+
+```{r message=FALSE, warning=FALSE}
+library(ggplot2) 
+veritrain$artik<-(residuals(lmod)) #EKK modelinden elde edilen artiklar (residuals)
+veritrain$tahmin<-predict(lmod) #EKK modelinden elde edilen tahminler (prediction)
+head(veritrain) 
+```
+
+```{r message=FALSE, warning=FALSE}
+kareresid<-((veritrain$artik)^2)
+```
+
+Artiklarimizin karelerine karsilik gelen bagimsiz degiskenlerin grafigi;
+
+```{r message=FALSE, warning=FALSE}
+op = par(bg = "lavenderblush")
+pairs(kareresid~Volume+
+            High+
+           Low+
+            Close+
+            Last
+             ,data=veritrain, main="Temel Dagilim Grafigi Matrisi")
+
+```
+
+Aciklayici degiskene karsi ei kare grafigi artan seklinde oldugu icin ei karelere karsilik o aciklayici degiskenin Regresyon Modeli kurulur.
+
+```{r message=FALSE, warning=FALSE}
+model3<-lm(kareresid~High+Low+Close+Last,data=veritrain)
+           
+weights3<-1/(predict(model3))^2 # agirliklar wi= 1/σ2i
+veritrain<-veritrain[, -c(16,17)]
+
+weightedleastsquaremod3<-lm(VWAP~Volume+
+            High+
+           Low+
+            Close+
+            Last, data= veritrain, weights = weights3)
+
+summary(weightedleastsquaremod3)
+```
+
+Summary kodumuza baktigimizda Residual standard error:  0.6213 ve Adjusted R-squared: 1 cikmistir.
+
+Simdi "Bazi olasi varyans ve standart sapma fonkiyonu tahminleri" nden dorduncusunu inceleyelim;
+
+4) Tahmin edilen yanitlara (y sapka) karsi ei kare grafigi artan seklindeyse ei karelere karsilik tahmin edilen yanitlara regresyon modeli kurulur. Bu modelden elde edilen tahminler σ2i tahminleri olarak kullanilir. Agirliklari da  wi= 1/σ2i seklinde olustururuz.
+
+Tahmin edilen yanitlara karsilik gelen hatalarin karelerinin grafigi;
+
+```{r message=FALSE, warning=FALSE}
+library(ggplot2) 
+veritrain$artik<-(residuals(lmod)) #EKK modelinden elde edilen artiklar (residuals)
+veritrain$tahmin<-predict(lmod) #EKK modelinden elde edilen tahminler (prediction)
+
+```
+
+```{r message=FALSE, warning=FALSE}
+kareresid<-((veritrain$artik)^2)
+```
+
+```{r message=FALSE, warning=FALSE}
+op = par(bg = "lavender")
+pairs(kareresid~veritrain$tahmin, main="Temel Dagilim Grafigi Matrisi")
+```
+
+Tahmin edilen yanitlara karsilik hatalarin karelerinin grafigi artan seklinde olmadigi icin bu yontemi kullanamayiz.
+
+Simdi bu yontemlerden elde edilen verilerin ozetine bakalim;
+
+```{r message=FALSE, warning=FALSE}
+summary(lmod)
+summary(weightedleastsquaremod1)
+summary(weightedleastsquaremod3)
+```
+
+EKK modelimizin Residual standard error: 4.431 ve Adjusted R-squared:  0.9999 dir.
+1. yontem ile agirliklandirma yaptigimizda Residual standard error: 1.458 ve Adjusted R-squared:   0.9999 dir.
+3. yontem ile agirliklandirma yaptigimizda Residual standard error: 0.6213 ve Adjusted R-squared:  1 dir.
+
+En dusuk stanard error a sahip ve en yuksek adjusted r-squared degerine sahip model 3. yontem ile agirliklandirma yaptigimizdaki modeldir.
+Ayrica agirliklandirma yaptigimda kullanilan bagimsiz degiskenlerimizin katsayilarinda degisimler meydana gelmistir.
+
+Simdi degisken varyanslilik probleminin giderildigini kontrol edelim.
+
+```{r message=FALSE, warning=FALSE}
+op = par(bg = "lightcyan")
+par(mfrow=c(1,2))
+plot(predict(lmod),residuals(lmod))
+plot(predict(weightedleastsquaremod3),residuals(model3))
+```
+
+```{r message=FALSE, warning=FALSE}
+library(dplyr)
+X<-model.matrix(lmod) 
+y<-veritrain$VWAP #verimizdeki yanit degiskeni
+W<-diag(weights3) #kosegenlerinde agirliklar olan matris
+Z<-sqrt(W)%*%X #w matrisinin karekoku ile x in carpimi
+yyildiz<-sqrt(W) %*% y
+```
+
+Bunlarin tanimlanmasi ile Agirliklandirilmis EKK modeli Basit EKK modeline dondu.
+
+```{r message=FALSE, warning=FALSE}
+Betawls<-solve(t(Z)%*%Z,t(Z)%*%yyildiz) #agirliklandirilmis ekk nin ß larini verir.
+
+cbind(Betawls,coef(weightedleastsquaremod3))
+```
+
+1. sutun donusum ile cikan ß katsayilarini, 2. sutun lm kodu  ile elde edilen ß katsayilarini gosterir.
+Agirliklandirilmis EKK modelindeki ß katsayilari ile donusum yapildiginda cikan ß katsayilari birebir ayni cikti. 
+
+```{r message=FALSE, warning=FALSE}
+donart<-yyildiz-Z%*%Betawls #donusturulmus model artiklari
+head(cbind(donart,residuals(weightedleastsquaremod3)),15)
+```
+
+1.sutun donusturulmus artiklari , 2.sutun Agirliklandirilmis EKK modelinin artiklarini gostermektedir.
+Modelin artiklarina bakildiginda birbirinden ayri cikmistir.
+
+lm modeli ile kurulan Agirliklandirilmis EKK  modelinin artiklarini kok icinde w ile carparak donusturulmus modelin artiklari elde edilir.
+
+```{r message=FALSE, warning=FALSE}
+head(cbind(sqrt(W)%*%residuals(weightedleastsquaremod3), donart),10)
+```
+
+1.sutun donusturulmus artiklari , 2.sutun Agirliklandirilmis EKK modelinin artiklarini gostermekte.
+Modelin artiklarina bakildiginda birbirleriyle ayni cikmistir.
+
+Eger Agirliklandirilmis EKK uzerinden residuals standart error hesaplarsak;
+
+```{r message=FALSE, warning=FALSE}
+sqrt(sum(residuals(weightedleastsquaremod3)^2)/205)
+```
+
+Agirliklandirilmis EKK modelinin residuals standat erroru ile ayni cikmamistir.
+
+Simdi Donusturulmus artiklarin standart errorunu hesaplayalim;
+
+```{r message=FALSE, warning=FALSE}
+sqrt(sum(donart^2)/205)
+```
+
+Simdi Agirliklandirilmis modelimiz icin BREUSCH-PAGAN TESTI yapalim;
+
+#### BREUSCH-PAGAN TESTI
+
+H0:Heterosce Dosticity (Degisken Varyanslilik) problemi yok. 
+H1:Heterosce Dosticity (Degisken Varyanslilik) problemi vardir.
+
+```{r message=FALSE, warning=FALSE}
+#install.packages("lmtest")
+library(lmtest)
+bpmod<-lm(donart^2~ Volume+
+            High+
+           Low+
+            Close+
+            Last,data=veritrain) 
+summary(bpmod)
+```
+
+BREUSCH-PAGAN Testimizin sonucuna gore p-value: 0.176  > 0.05 oldugundan H0 hipotezi kabul edilir yani degisken varyanslilik problemi yoktur deriz. 
+Goruldugu uzere Agirliklandirma yaparak degisken varyanslilik problemini ortadan kaldirmis olduk.
+
+## ACIKLAYICI DEGISKENLERLE ILGILI PROBLEMLER
+
+### IC ILISLI (COLLINEARITY)
+
+Iki degisken arasi lineer iliskiyi gosterir.Eger bir aciklayici degisken ve bir diger aciklayici degiskenin veya degiskenlerin lineer bir kombinasyonlari ise bu durumda x transpoz x matrisi (X'X) singuler olur ve tersi alinamaz. Bu durumdan ilgili degiskenlerden biri modelden cikartilarak kurtulunur.
+Gozlem sayisi arttikca ic iliski durumu azalir.
+
+```{r message=FALSE, warning=FALSE}
+library(dplyr)
+nsts <- NSTS%>%select(c("VWAP","Volume","High","Low","Close","Last" ))
+head(nsts,10)
+```
+
+```{r message=FALSE, warning=FALSE}
+set.seed(2)
+index<-sample(1:nrow(nsts),round(nrow(nsts)*0.85)) 
+veritrain<-nsts[index,] 
+veritest<-nsts[-index,] 
+```
+
+```{r message=FALSE, warning=FALSE}
+lmod1<-lm(VWAP~Volume+
+            High+
+           Low+
+            Close+
+            Last,data=veritrain)
+summary(lmod1)
+```
+
+Kurulan regresyon modelinin anlamliligina baktigimizda p value=yaklasik 0 < 0.05 oldugundan kurulan model anlamlidir deriz.
+
+Simdi Collinearity teshisi icin korelasyon matrisi, kosul inceksi ve vif e bakacagiz.
+
+### KORELASYON MATRISI
+
+Simdi x in korelasyon matrisine bakalim. Bunun icin yanit degiskenini (VWAP) veriden cikartmaliyiz.Geri kalanlarin korelasyon matrisine bakmaliyiz.
+
+```{r korelasyon, message=FALSE, warning=FALSE}
+cor(veritrain[,-c(1)])
+```
+
+Korelasyon matrisine baktigimizda ornegin en yuksek Close ile Last (aralarindaki korelasyon 0.9999782) bagimsiz degiskenlerinin iliskili oldugu gorulmektedir. Diger bagimsiz degiskenler arasinda da korelasyon oldukca yuksektir.
+
+Bu korelasyonlara simdi korelasyon plotu ile bakalim.
+
+```{r message=FALSE, warning=FALSE}
+library(corrplot)
+corrplot(cor(veritrain[,-1]),method = "pie", order="hclust")
+```
+
+Korelasyon plotunda Pozitif korelasyonlar mavi, negatif korelasyonlar kirmizi renkte gosterilir.
+
+Korelasyon plotu ile korelasyon matrisimizin sonuclari ayni cikmistir.Bagimsiz degiskenlerin arasinda pozitif yonlu iliskinin yuksek oldugu gorulmektedir. (mavinin tonuna gore en yuksek iliskiden en dusuk iliskiye gore koyu maviden aciga dogru gidiyor.)
+
+### KOSUL INDEKSI
+
+Kappa degeri > 30 ise orta derece collinearity , kappa degeri > 100 ise guclu collinearity oldugunu gosterir.
+
+Kurulan regresyon modelimizi matrix haline donusturelim. 
+
+```{r martix, message=FALSE, warning=FALSE}
+x <- model.matrix(lmod1)[,-1]
+head(x,5)
+```
+
+Verimizden yanit degiskenini cikartip sadece aciklayici degiskenlerden olusan matrix formuna donusturuyoruz.
+
+Simdi x transpoz x in eigen valuelerini hesaplayalim.
+
+```{r eigen value, message=FALSE, warning=FALSE}
+e <- eigen(t(x)%*%x)$values
+e
+```
+
+Kappa degeri : sqrt(En buyuk ozdeger / En kucuk ozdeger) 
+
+```{r kosul indeksi, message=FALSE, warning=FALSE}
+k <- sqrt(max(e)/min(e))
+k
+```
+
+Sonucumuzda Kappa=1517373 > 30 oldugundan sonucumuza gore collinearity (ic iliski) problemi vardir.
+
+### VIF 
+
+Xi degiskenlerinin diger bagimsiz degiskenler ile regresyonundan elde edilen R kare degerlerinin yuksekligi collinearity (ic iliski)nin varligini gosterir. Buna bagli gelistirilmis olcut VIF dir.
+
+VIF degerinin 10 dan buyuk olmasi collinearity (ic iliski) probleminin oldugunu soyler.
+
+Hazir kod ile vif degerlerine bakmak icin car paketi kullanilir.
+
+```{r vif, message=FALSE, warning=FALSE}
+library(car)
+vif(lmod1)
+```
+
+Bagimsiz degiskenlerimiz icin hesaplatilan vif degerlerimiz 10 dan buyuk oldugundan bagimsiz degiskenler arasinda collinearity(ic iliski) problemi vardir deriz.
+
+Bu uc tanimlama yontemi de bize bu veride collinearity problemi oldugunu isaret etmektedir. 
+
+## RIDGE- LASSO - ELASTICNET 
+
+### RIDGE 
+
+Ridge regresyon EKK optimizasyon yontemine bir kisit getirir. Bu kisit ß katsayilarinin karelerinin toplaminin uzerinedir.
+
+Lambda buyudukce ß parametreleri 0 a dogru yaklasir.Parametrelerin buyumesi parametre tahminlerinin varyansini dusurur. Negatif etkisi modele yanlilik katmasidir. 
+
+Var(ßsapka ridge)= σ^2 / (x'x + λI) burada λ yi buyuk tutarsak varyans kuculur ayni zamanda yanlilik artar. Ikisi arasinda denge kuracak sekilde λ belirlenmelidir. Multicollinearity problemini halledebilecek en kucuk λ yi belirlemeliyiz. 
+
+EKK tahmin edicisi yansiz bir tahmin edici iken Ridge Regresyonunun tahmin edicisi yanli bir tahmin ediciye donusur. Ic iliski durumlarinda varyanslar buyukken Ridge Regresyonunda varyanslar daha kucuktur.
+
+Ridge Regresyon da aciklayici degiskenlerin tamamini modele dahil eder ve kompleks model olusmasini saglar.
+(Modele degisken ekledikce hata duser fakat kompleks hale de gelebilir.)
+
+```{r message=FALSE, warning=FALSE}
+lambda<-10^seq(-3, 5, length.out = 100) #lamda icin dizi olusturma
+```
+
+Ridge de lambda parametresinin secimi icin en iyi yontem Cross Validationdur. Bu sebeple lambdalar icin oncelikle bir dizi olusturduk.
+
+```{r message=FALSE, warning=FALSE}
+x<-as.matrix(veritrain[,-1]) 
+head(x,10)
+```
+
+Train verimizi matrix haline donusturuyoruz (yanit degiskenini VWAP i cikardik)
+
+Lambdanin farkli degerleri icin degiskenlerin aldigi farkli degerlerin grafigini cizdirelim;
+Ridge Regresyonda alpha = 0 degerini alir.
+
+```{r message=FALSE, warning=FALSE}
+library(glmnet) 
+ridgemodel<-glmnet(x,veritrain$VWAP,alpha = 0,lambda = lambda) 
+op = par(bg = "seashell1")
+plot(ridgemodel,xvar = "lambda")
+```
+
+Bu grafik lambdanin farkli degerleri icin degiskenlerin aldigi farkli degerlerin grafigidir.
+
+Grafikte kirmizi cizgiye baktigimizda stabil olmayan durum var. Bu degiskenin degeri digerlerine gore cok az bir degisim gosteriyor. Bu multicollinearity nin bir etkisidir.
+
+Grafigimizin ust bolumunde gozuken 5 degerleri Ridge Regresyonun hicbir bagimsiz degiskeni atmayip tamamini kullanmasindandir.
+
+Grafikte gorulen her bir cizgi bir degiskene karsilik gelmektedir.
+
+Bu grafik ile model katsayilarinin lambdaya gore nasil degistigini gosterdik. Simdi Cross Validation Yontemi ile optimal lambdayi belirleyelim.
+
+Cross Validationda 9 fold ile model kurulur 10 uncu fold da bu modelin performansi incelenir MSE' ye bakilir. Herbir lambda degeri icin Cross Validation yapilir. Tum bulunan MSE ortalamalari alinir ve minimum RMSE degerini veren lambda degeri secilir.
+
+```{r message=FALSE, warning=FALSE}
+op = par(bg = "mintcream")
+cv.fitridge<-cv.glmnet(x,veritrain$VWAP,alpha=0,lambda = lambda) #yukarida olusturulan lambda dizisi icin
+plot(cv.fitridge)
+```
+
+Grafikte gozuken kirmizi noktalar her lambda degeri icin 10 folddan gelen MSE lerin otalamasidir.
+
+Grafikteki ilk dogru minimum MSE degerini veren lambda degerinin logaritmasini, ikinci dogru ise foldlardan elde edilen MSE degerlerinin standart sapmasinin 1 oldugu lambda degerinin logaritmasini gostermektedir. 
+
+Grafigimizin ust bolumunde gozuken 5 degerleri Ridge Regresyonunun tum degiskenleri kullanmasidir.
+
+Simdi optimal lambda degerini kullanarak Ridge Regresyon modelimizi kuralim ve bu modelin test verisi uzerinde RMSE ve R kare degerlerini hesaplayalim.
+
+Performans kiyaslamasi her zaman test veri seti uzerinden yapilir. Cunku multicollinearity nin train'e bir etkisi yoktur ama test'e etkisi vardir.
+
+```{r message=FALSE, warning=FALSE}
+optimumlambda<-cv.fitridge$lambda.min #optimum lambda icin bunlar icerisinden min olan secilir. 
+optimumlambda
+lambda_1SE<-cv.fitridge$lambda.1se
+lambda_1SE
+```
+
+Grafigimizde cikan cizgilerimizin yerine bakarsak ;   
+
+Ilk Dogru: log(λmin)=log(0.001)= -6.907755   
+
+Ikinci Dogru : log(λ1SE)=log(9.111628)= 2.209551
+
+Ridge Regresyon modeli;
+
+```{r message=FALSE, warning=FALSE}
+ridgemodel<-glmnet(x,veritrain$VWAP,alpha=0,lambda=optimumlambda)
+```
+
+RMSE ve R kare hesaplayan fonksiyonlar;
+
+```{r message=FALSE, warning=FALSE}
+rmse<-function(true, predicted,n) {sqrt(sum((predicted - true)^2)/n)}
+
+ypredictedridge <- predict(ridgemodel, s = optimumlambda, newx = as.matrix(veritest[,-1]))# kurulan model uzerinden elde edilen tahmin degerleri
+
+rsquare <- function(true, predicted) { 
+  sse <- sum((predicted - true)^2) 
+  sst <- sum((true - mean(true))^2) 
+  rsq <- 1 - sse / sst 
+  rsq }
+```
+
+Test verisi uzerinden Ridge modelinin R karesini hesaplatalim;
+
+```{r message=FALSE, warning=FALSE}
+ridgerkare<-rsquare(veritest$VWAP,ypredictedridge) 
+ridgerkare
+```
+
+Ridge regresyon icin test verisi uzerinden R kare 0.9997101 cikmistir.
+
+Test verisi uzerinden Ridge Modelinin RMSE sini hesaplatalim;
+
+```{r message=FALSE, warning=FALSE}
+ridgermse<-rmse(veritest$VWAP,ypredictedridge,length(veritest$VWAP)) 
+ridgermse
+```
+
+Ridge Regresyon icin test verisi uzerinden RMSE 9.104282 cikmistir.
+
+AIC ve BIC performans degerlendirme kriterleridir. Modeller arasinda kiyas yaparken kullanilir. Genel olarak AIC ve BIC degerleri daha kucuk olan model diger modellere gore daha iyidir. 
+AIC ve BICde artik degerler kullanilir.
+
+Simdi Test verisi icin artiklar;
+
+```{r message=FALSE, warning=FALSE}
+ridgeartik<-veritest$VWAP-(ypredictedridge)
+head(ridgeartik,10)
+```
+
+### AIC
+ 
+```{r message=FALSE, warning=FALSE}
+ridgeaic<-nrow(nsts)*(log(2*pi)+1+log((sum((ridgeartik)^2)/nrow(nsts))))+((length(ridgemodel$VWAP)+1)*2) 
+ridgeaic
+```
+
+Ridge Regresyon icin AIC degeri  1329.508 cikmistir.
+
+### BIC 
+
+```{r message=FALSE, warning=FALSE}
+ridgebic<-nrow(nsts)*(log(2*pi)+1+log((sum((ridgeartik)^2)/nrow(nsts))))+((length(ridgemodel$VWAP)+1)*log(nrow(nsts)))
+ridgebic
+```
+
+Ridge Regresyon icin BIC degeri 1333.022 cikmistir.
+
+### LASSO 
+
+Degisken secimi icin kullanilir. Lassoda katsayilarin bazilari Ridgeden farkli olarak sifirlanmaktadir. 
+
+Lasso multicollinearity problemini cozerken ayni zamanda degisken secimi de yapabilme yetenegine sahiptir. Lassoda da λ ceza parametresi vardir. λ buyudukce modelden atilan (disarida birakilan) degisken sayimiz artiyor.
+
+Bazen Lasso cok fazla degiskeni disarida birakmaktadir. Bu modelin tahmin performansini dusurur. Modelde gormek istedigimiz degiskeni goremeyebiliriz.
+
+Ilk olarak Cross Validation ile Optimal Lambda degerini belirleyelim.
+Lasso Regresyonunda alpha = 1 degerini alir.
+
+```{r message=FALSE, warning=FALSE}
+op = par(bg = "lavender")
+cv.fitlasso<-cv.glmnet(x,veritrain$VWAP,alpha=1,lambda = lambda) #lambda dizisinde belirledigimiz lamdalar kullanilir.
+plot(cv.fitlasso)
+```
+
+Grafigimizin ust bolumunde gozuken degerler Lasso Regresyonunun bagimsiz degiskenlerinin tamamini kullanmayarak modelden atmasindan dolayi kaynaklanir. 
+
+Grafikte gozuken kirmizi noktalar her lambda degeri icin 10 folddan gelen MSE lerin ortalamasidir.
+
+Grafikteki ilk dogru minimum MSE degerini veren lambda degerinin logaritmasini, ikinci dogru ise foldlardan elde edilen MSE degerlerinin standart sapmasinin 1 oldugu lambda degerinin logaritmasini gostermektedir.
+
+Optimal Lambda degeri;
+
+```{r message=FALSE, warning=FALSE}
+optimallambda<-cv.fitlasso$lambda.min
+optimallambda
+lambda_1SE<-cv.fitlasso$lambda.1se
+lambda_1SE
+```
+Grafigimizde cikan cizgilerimizin yerine bakarsak ;    
+
+Ilk Dogru: log(λmin)=log(0.001)= -6.907755   
+
+Ikinci Dogru : log(λ1SE)=log(1.417474)= 0.3488764
+
+Simdi Optimal Lambda degerini kullanarak Lasso Regresyon modelimizi kuralim ve bu modelin test verisi uzerinde RMSE ve R kare degerlerini hesaplayalim.
+
+Lasso regresyon modeli;
+
+```{r message=FALSE, warning=FALSE}
+lassomodel<-glmnet(x,veritrain$VWAP,alpha=1,lambda=optimallambda) 
+coef(lassomodel)
+```
+
+Burada hicbir degerimiz atilmamistir.
+
+Simdi test verisi uzerinden Lasso Regresyon modelimizin performansina bakalim.
+
+Kurulan model uzerinden elde edilen tahmin degerleri;
+
+```{r message=FALSE, warning=FALSE}
+ypredictedlasso <- predict(lassomodel, s = optimallambda, newx = as.matrix(veritest[,-1]))
+head(ypredictedlasso,10)
+```
+
+Test verisi icin Lasso Regresyon modelinin R karesi;
+
+```{r message=FALSE, warning=FALSE}
+lassorkare<-rsquare(veritest$VWAP,ypredictedlasso) 
+lassorkare
+```
+
+Test verisi icin Lasso Regresyon Modelinin R karesi 0.999713 cikmistir.
+
+Test verisi icin Lasso Regresyon Modelinin RMSE si;
+
+```{r message=FALSE, warning=FALSE}
+lassormse<-rmse(veritest$VWAP,ypredictedlasso,length(veritest$VWAP)) 
+lassormse
+```
+
+Test verisi icin Lasso Regresyon Modelinin RMSE si 9.058652 cikmistir.
+
+Lasso Regresyon Modeli icin artiklar;
+
+```{r message=FALSE, warning=FALSE}
+lassoartik<-veritest$VWAP-(ypredictedlasso)
+head(lassoartik,10)
+```
+
+Lassonun artiklari uzerinden AIC;
+
+```{r message=FALSE, warning=FALSE}
+lassoaic<-nrow(nsts)*(log(2*pi)+1+log((sum((lassoartik)^2)/nrow(nsts))))+((length(lassomodel$VWAP)+1)*2) 
+lassoaic
+```
+
+Lasso Regresyon icin AIC degeri 1327.016 cikmistir.
+
+Lassonun artiklari uzerinden BIC;
+
+```{r message=FALSE, warning=FALSE}
+lassobic<-nrow(nsts)*(log(2*pi)+1+log((sum((lassoartik)^2)/nrow(nsts))))+((length(lassomodel$VWAP)+1)*log(nrow(nsts)))
+lassobic
+```
+
+Lasso Regresyon icin BIC degeri 1330.53 cikmistir.
+
+### ELASTIC-NET 
+
+Elatic net Ridge Regresyon Modeli ile Lasso Regresyon Modelinin bir kombinasyonudur.Ridge tarzi cezalandirma ve Lasso tarzi degisken secimi yapar. Lasso ve Ridge'de bulunan  λ parametresi haricinde ikinci bir parametre olan α parametresi de vardir. Ozellikle yuksek korelasyonlu degisken gruplari oldugunda onerilir.
+
+Ilk olarak Cross Validation ile Optimal Lambda degerini belirleyelim.
+λ= 0.5 alindiginda Elastic Net Regresyon Modeli elde edilir.
+
+```{r message=FALSE, warning=FALSE}
+op = par(bg = "lightcyan")
+cv.fitelasticnet<-cv.glmnet(x,veritrain$VWAP,alpha=0.5,lambda = lambda) 
+plot(cv.fitelasticnet)
+```
+
+Grafigimizin ust bolumunde gozuken degerler Elastic Net Regresyonun bagimsiz degiskenlerinin tamamini kullanmayarak modelden atmasindan dolayi kaynaklanir.
+
+Grafikte gozuken kirmizi noktalar her lambda degeri icin 10 folddan gelen MSE'lerin ortalamasidir.
+
+Graﬁkteki ilk dogru minimum MSE degerini veren lambda degerinin logaritmasini, ikinci dogru ise foldlardan elde edilen MSE degerlerinin standart sapmasinin 1 oldugu lambda degerinin logaritmasini gostermektedir.
+
+Optimal Lambda degeri;
+
+```{r message=FALSE, warning=FALSE}
+optlambda<-cv.fitelasticnet$lambda.min
+optlambda
+lambda_1SE<-cv.fitelasticnet$lambda.1se
+lambda_1SE
+```
+Grafigimizde cikan cizgilerimizin yerine bakarsak ;    
+
+Ilk Dogru: log(λmin)=log(1.176812)= 0.1628091    
+
+Ikinci Dogru : log(λ1SE)=log(4.328761)= 1.465281
+
+Simdi Optimal Lambda degerini kullanarak Elastic Net Regresyon Modelimizi kuralim ve bu modelin test verisi uzerinde RMSE ve R kare degerlerini hesaplayalim.
+
+```{r message=FALSE, warning=FALSE}
+elasticmodel<-glmnet(x,veritrain$VWAP,alpha=0.5,lambda=optlambda) 
+coef(elasticmodel)
+```
+
+5 degiskenli modelimizde Elastic Net Regresyonu 1 degiskeni (Volume ) atilmistir.Bu degiskene iliskin katsayilar sifirlanmistir.
+
+Simdi test verisi uzerinden Elastic Net Regresyon Modelimizin performansina bakalim.
+
+Kurulan model uzerinden elde edilen tahmin degerleri;
+
+```{r message=FALSE, warning=FALSE}
+ypredictedelasticnet <- predict(elasticmodel, s = optlambda, newx = as.matrix(veritest[,-1]))
+head(ypredictedelasticnet,10)
+```
+
+Test verisi icin Elastic Net Regresyon modelinin R karesi;
+
+```{r message=FALSE, warning=FALSE}
+elasticrkare<-rsquare(veritest$VWAP,ypredictedelasticnet) 
+elasticrkare
+```
+
+Test verisi icin Elastic Net Regresyon Modelinin R karesi 0.9999421 cikmistir.
+
+Test verisi icin Elastic Net Regresyon Modelinin RMSE si;
+
+```{r message=FALSE, warning=FALSE}
+elasticrmse<-rmse(veritest$VWAP,ypredictedelasticnet,length(veritest$VWAP)) 
+elasticrmse
+```
+
+Test verisi icin Elastic Net Regresyon Modelinin RMSE si 4.069581 cikmistir.
+
+Elastic Net Regresyon Modeli icin artiklar;
+
+```{r message=FALSE, warning=FALSE}
+elasticartik<-veritest$VWAP-(ypredictedelasticnet)
+head(elasticartik,10)
+```
+
+Elastic Net in artiklari uzerinden AIC;
+
+```{r message=FALSE, warning=FALSE}
+elasticaic<-nrow(nsts)*(log(2*pi)+1+log((sum((elasticartik)^2)/nrow(nsts))))+((length(elasticmodel$VWAP)+1)*2) 
+elasticaic
+```
+
+Elastic Net Regresyon icin AIC degeri 930.1267 cikmistir.
+
+Elastic Net in artiklari uzerinden BIC;
+
+```{r message=FALSE, warning=FALSE}
+elasticbic<-nrow(nsts)*(log(2*pi)+1+log((sum((elasticartik)^2)/nrow(nsts))))+((length(elasticmodel$VWAP)+1)*log(nrow(nsts)))
+elasticbic
+```
+
+Elastic Net Regresyon icin BIC degeri  933.6402 cikmistir.
+
+Simdi kurulan modellerde AIC, BIC, RMSE ve R kare degerlerini karsilastirip model secimi yapalim.
+
+```{r message=FALSE, warning=FALSE}
+tablo<-matrix(c(ridgeaic,ridgebic,ridgermse,ridgerkare,
+              lassoaic,lassobic,lassormse,lassorkare,
+              elasticaic,elasticbic,elasticrmse,elasticrkare),3,4,byrow = TRUE)
+
+row.names(tablo)<-c("Ridge","Lasso","Elasticnet") 
+
+colnames(tablo)<-c("AIC","BIC","RMSE","Rkare") 
+
+tablo
+```
+
+Secim yaparken AIC BIC ve RMSE degerleri kucuk , R kare degeri buyuk olan model secilmelidir.
+
+Modellerin R2 degerlerini, RMSE degerlerini, AIC, BIC degerlerini karsilastirdigimizda;
+
+En kucuk rmse degeri Elasticnet Regresyon Modelinde (RMSE: 4.069581), 
+En kucuk AIC degeri Elasticnet Regresyon Modelinde (AIC: 930.1267),
+En kucuk BIC degeri Elasticnet Regresyon Modelinde (BIC: 930.1267),
+En buyuk R kare degeri Elasticnet regresyon modelinde (R Kare: 930.1267).
+Bu sebeple calisabilecegimiz en iyi regresyon modeli Elastic Net Regresyon Modelidir. Bu veriyi modellemede Elastic Net Regresyon Modeli daha uygundur.
+
+Multicollinearity nin cozumunde Ridge, Lasso, Elastic Net haricinde Temel Bilesenler Regresyonu da kullanilir. 
+Simdi multicollinearity probleminden Temel Bilesenler Yolu ile kurtulmayi deneyelim.
+ 
+## TEMEL BILESENLER REGRESYONU 
+
+Veri setindeki tum degiskenler vektoru ifade eder. Degiskenler arasinda iliski olmadiginda bu vektorler birbirlerine diktir.Temel bilesenler analizinin amaci, X matrisine bir donusum uygulayarak birbirlerine dik(ortogonal) vektorlerden olusan bir sistem elde etmektir. Yuksek boyutlu verilerde dusuk boyutlu dogrusal yapi elde etmek icin kullanilan bir yontemdir. Vektor boyutlari kisa olanlar goz ardi edilir.
+
+```{r message=FALSE, warning=FALSE}
+set.seed(3)
+index<-sample(1:nrow(nsts),round(nrow(nsts)*0.95)) 
+veritrain<-nsts[index,] 
+veritest<-nsts[-index,]  
+```
+
+Oncelikle Train veri seti uzerinde kurdugumuz EKK Regresyon Modelini kullanarak, hem train hem de test veri seti uzerinde RMSE degerlerini hesaplayalim.
+
+EKK Regresyon Modelimiz;
+
+```{r message=FALSE, warning=FALSE}
+lmod1<-lm(VWAP~Volume+
+            High+
+           Low+
+            Close+
+            Last,data=veritrain)
+summary(lmod1)
+```
+
+Kurulan Regresyon Modelinin anlamliligina baktigimizda p value yaklasik=0< 0.05 oldugundan H0 red edilir yani kurulan model anlamlidir deriz.
+
+Simdi train ve test veri seti uzerinde RMSE degerlerini hesaplayalim.
+
+```{r message=FALSE, warning=FALSE}
+rmse <- function(x,y) sqrt(mean((x-y)^2))
+rmse(predict(lmod1), veritrain$VWAP)
+```
+
+Train veri seti uzerinden kurulan regresyon modelinin RMSE degeri 4.379819 dir.
+
+```{r message=FALSE, warning=FALSE}
+rmse(predict(lmod1, veritest), veritest$VWAP)
+```
+
+Test veri seti uzerinden kurulan regresyon modelinin RMSE degeri 3.084308 dir.
+
+Iki RMSE degeri arasinda fark olmasinin sebebi multicollinearity nin varliginin gostergesidir.
+
+
+```{r message=FALSE, warning=FALSE}
+par(mfrow=c(1,3),op = par(bg = "honeydew"))
+plot(Last~High,veritrain)
+plot(High~Low,veritrain)
+plot(Close~Last,veritrain)
+```
+
+Bazi aciklayici degiskenler arasinda sacinim grafigi cizdirdik. Bunlar arasinda lineer iliski goruluyor. Bu da multicollinearity'nin varliginin bir gostergesidir.
+
+Simdi tum componentleri kullanarak bir Temel Bilesenler Regresyonu kuralim.
+
+```{r message=FALSE, warning=FALSE}
+library(pls)
+pcrmodel <- pcr(VWAP~Volume+
+            High+
+           Low+
+            Close+
+            Last,data=veritrain,scale=T) 
+           
+summary(pcrmodel)
+```
+
+Ciktinin ilk satiri componentlerin X matrisindeki aciklayicilik oranlarini, ikinci satir ise yanit degiskenindeki aciklayicilik miktarlarini gostermektedir.
+
+Verimizde 5 adet vektor vardi. Besinci component ile yanittaki degiskenligin yaklasik %99.9 aciklanabilmektedir.
+
+Train ne kadar cok componentle calisirsa o kadar iyi sonuc alinir. Cunku multicollinearity nin train uzerinde etkisi yoktur fakat test verisi uzerine etkisi vardir.
+
+```{r message=FALSE, warning=FALSE}
+op = par(bg = "azure")
+validationplot(pcrmodel,val.type = "RMSE",col="green")
+```
+
+Bu grafik bize her componente karsilik gelen RMSE degerlerini gosterir. Train veri seti uzerinden cizilen grafikte component sayisi arttikca RMSE degerleri dusmektedir.
+
+En buyuk degisim intercepten birinci componente geciste yasanmistir. Ikinci componentten sonra bir degisim olmamistir. Toplamda intercept ile birlikte 6 component var.
+
+Bu grafige iliskin RMSE degerleri;
+
+```{r message=FALSE, warning=FALSE}
+pcrmse <- RMSEP(pcrmodel) 
+pcrmse
+```
+
+RMSE degeri component sayisi arttikca azalmaktadir. En dusuk RMSE degeri ilk olarak birinci componentte gorulmektedir.
+
+Simdi RMSE icin yaptiklarimizi R kare icinde yapalim.
+
+```{r message=FALSE, warning=FALSE}
+op = par(bg = "lavenderblush1")
+validationplot(pcrmodel,val.type = "R2",col="orangered3")
+```
+
+Bu grafik bize her componente karsilik gelen R kare degerlerini gosterir. Train veri seti uzerinden cizilen grafikte component sayisi arttikca R kare degerleri artmaktadir.
+
+En buyuk degisim intercepten birinci componente geciste yasanmis.Ikinci componentten sonra bir degisim olmamistir. Toplamda intercept ile birlikte 6 component var.
+
+Multicollinearity icin train veri setine bakmak uygun olmadigindan test veri setine bakmak daha uygun olacaktir.
+
+Test seti uzerinde component sayilarina gore RMSE degerlerini de RMSEP fonksiyonunu kullanarak bulabiliriz.
+
+```{r message=FALSE, warning=FALSE}
+pcrmse <- RMSEP(pcrmodel,newdata=veritest)
+pcrmse
+```
+
+Test veri seti uzerinden baktigimizda performans acisindan en kucuk RMSE degeri 3.084 ile besinci componenttedir.
+
+Simdi 5 component ile kurulan modelin katsayilarina bakalim.
+
+```{r message=FALSE, warning=FALSE}
+coef(pcrmodel,ncomp=5)
+```
+
+Bu cikti bize pcr 5 component icin modelin yanit degiskeni tahminlerini verir.
+
+Simdi bu modeli kullanarak train ve test veri seti uzerinden RMSE degerlerini hesaplayalim.
+
+```{r message=FALSE, warning=FALSE}
+rmse(predict(pcrmodel, ncomp=5), veritrain$VWAP)
+```
+
+Train veri seti uzerinden RMSE degeri 4.379819 dir.
+
+```{r message=FALSE, warning=FALSE}
+rmse(predict(pcrmodel, veritest, ncomp=5), veritest$VWAP)
+```
+
+Test veri seti uzerinden RMSE degeri 3.084308 dir.
+
+Componentlerimizin tamamini kullandigimiz icin sonucumuz Ekk modelimizle ayni cikmistir.Optimal component sayisini belirlerken test verisi uzerindeki performansa baktik. Bu is icin Cross Validation Yonteminin kullanilmasi aslinda daha dogru bir yaklasim olacaktir.
+
+### CROSS-VALIDATION ILE TEMEL BILESEN ANALIZI
+
+Kac component olmasi gerektigini daha iyi verecek yontemdir. Diger yontemlerde her yapista farkliliklar olmaktadir.
+
+Train veri seti uzerinden Cross Validation hesaplatalim;
+
+```{r message=FALSE, warning=FALSE}
+set.seed(3) 
+pcrmodel1 <- pcr(VWAP~Volume+
+            High+
+           Low+
+            Close+
+            Last,data=veritrain,scale=T,validation="CV") 
+pcrCV <- RMSEP(pcrmodel1, estimate="CV")
+pcrCV
+```
+
+RMSE degeri en dusuk besinci componentte (5.116) cikmistir.
+
+```{r message=FALSE, warning=FALSE}
+op = par(bg = "lavender")
+plot(pcrCV,main="",col="red")
+```
+
+Cross Validation icin componentlere karsilik RMSE degerlerinin grafigi yukarida gosterilmektedir.
+
+Pcrcv icin en kucuk RMSE degerini alan componentin hangisi olduguna bakmak icin;
+
+```{r message=FALSE, warning=FALSE}
+which.min(pcrCV$val)
+```
+
+Grafikte Cross Validated RMSE degerleri vardir.10 fold Cross Validation ile pcrCV degerlerinin altincisi  yani besinci component’e karsilik gelen RMSE degeri minimum cikti. (intercept+5 component)
+
+```{r message=FALSE, warning=FALSE}
+coef(pcrmodel1,ncomp=5)
+```
+
+Bu cikti bize pcrCV 5 component icin modelin yanit degiskeni tahminlerini verir.
+Yani tahmin performansimiz besinci componentte en iyi olmaktadir.
+
+Datayi NSTS alarak modelimizi kuralim; 
+
+```{r message=FALSE, warning=FALSE}
+model1<-lm(VWAP~Volume+
+            High+
+           Low+
+            Close+
+            Last,data=NSTS)
+summary(model1)
+```
+
+Kurulan Regresyon Modelinin anlamliligina baktigimizda p value yaklasik=0< 0.05 oldugundan H0 red edilir yani kurulan model anlamlidir deriz.
+
+```{r message=FALSE, warning=FALSE}
+fit<- fitted(model1)
+head(fit,10) #tahmin degerleri
+```
+
+```{r message=FALSE, warning=FALSE}
+resid <-residuals(model1)
+head(resid,10) #artiklar 
+```
+
+## HATA ILE ILGILI VARSAYIMLAR
+
+### NORMALLIK VARSAYIMININ KONTROLU TESTI
+
+Tum normallik testlerini (Shapiro-Wilk,Kolmogorov-Smirnov,Cramer-von Mises,Anderson-Darling) bir arada gormek icin asagidaki kodu kullanmaliyiz;
+
+```{r message=FALSE, warning=FALSE}
+library(olsrr) 
+ols_test_normality(model1)
+```
+Normallik testlerimizin p-valuelerine baktigimizda 0.05 ten kucuk oldugunu goruyoruz yani artiklarimizin dagilimi normal degildir deriz.
+
+```{r message=FALSE, warning=FALSE}
+op = par(bg = "lightcyan2")
+x <-residuals(model1)
+
+#Artiklarin histogrami;
+histogram <-hist(x, breaks=10, density=10,col="darkgrey",xlab="Residuals", main="Histogram")
+abline(v=mean(x), col="darkgreen", lwd=2)
+
+
+#Yogunluk egrisi cizme;
+multiplier <- histogram$counts / histogram$density 
+mydensity <- density(x) 
+mydensity$y <- mydensity$y * multiplier[1] 
+lines(mydensity,col="blue", lwd=2)
+
+#Normal egrisisin ayni ortalama ve standart sapma ile cizilmesi;
+xfit <- seq (min(x), max(x), length=40) 
+yfit <- dnorm(xfit, mean =mean(x), sd = sd(x))
+yfit <- yfit *diff(histogram$mids[1:2]) *length(x) 
+lines(xfit, yfit, col="red", lwd=2)
+```
+
+Histogram Grafigimize baktigimizda Kirmizi cizgi bize Normal Dagilim Egrisini verir , Mavi olan cizgi ise sinif orta noktalarindan gecen diyagramdir.Mavi ve Kirmizi cizgilerimiz birbirine benzemedigi icin verinin Normal dagilmadigini soyleyebiliriz.
+
+```{r message=FALSE, warning=FALSE}
+#QQ-plot; 
+op = par(bg = "lavender")
+qqnorm(residuals(model1),ylab="residuals",main="Q-Q PLOT",col="orange") 
+qqline(residuals(model1),col="darkgreen")
+```
+
+Q-Q Plot Grafigimize baktigimizda verimiz Q-Q Plot cizgisi uzerinde olmadigindan normal dagilim varsayiminin saglanmadigi gorulmektedir.
+
+```{r message=FALSE, warning=FALSE}
+#Density;
+op = par(bg = "mintcream")
+
+d <- density(x) 
+plot(d,main = "Yogunluk Grafigi") 
+polygon(d, col="orange", border="violet")
+
+library(plotly)
+
+p <- ggplot(NSTS, aes(x)) + 
+  geom_histogram(aes(y = ..density..), alpha = 0.7, fill = "#6600CC") + 
+  geom_density(fill = "#FF99FF", alpha = 0.5) + 
+  theme(panel.background = element_rect(fill = '#CCFFCC')) + 
+  ggtitle("Density with Histogram overlay")
+
+fig <- ggplotly(p)
+fig
+
+# Interaktif density plotun gorseli;(Html ciktisini pdf e cevirince gozukmedigi icin ekledik)
+
+knitr::include_graphics("densityplot.png")
+
+```
+
+Yogunluk Grafigimize baktigimizda sag kuyruk daha uzun oldugu icin grafigimiz sola carpiktir deriz.
+
+### SABIT VARYANSLILIK
+
+Sabit varyansliligin en kullanisli teshis yontemi artiklara (residuals(lmod)) karsilik tahmin (fitted(lmod)) degerlerinin  plotlanmasidir.
+
+```{r message=FALSE, warning=FALSE}
+library(ggplot2) 
+ggplot(data=NSTS,mapping=aes(x=fit,y=resid))+ 
+  geom_jitter(color="green")+ 
+  geom_hline(yintercept=0,color="red")+ggtitle("RESID & FITTED ")+xlab(" FITTED ")+ylab("RESID")
+
+# Interaktif bir sekilde gorsellestirelim;
+
+p <- plot_ly(veritrain, x = fit, y = resid, alpha = 0.3) 
+subplot(
+  add_markers(p, size = 2, name = "default"),
+  add_markers(p, size = 2, sizes = c(1, 248), name = "custom")
+)
+
+#Interaktif plotun gorseli;(Html ciktisini pdf e cevirince gozukmedigi icin ekledik)
+
+knitr::include_graphics("sabitvaryans2.png")
+
+
+```
+
+Cizdirdigimiz grafigimiz bize duzdun bir sekil vermedigi icin sabit varyansli olup olmadigina emin olamiyoruz.Bu yuzden degisken varyanslilik testlerine basvuruyoruz.
+
+## DEGISKEN VARYANSLILIK TESTLERI
+
+### BREUSCH-PAGAN TESTI
+
+H0:Heterosce dosticity (Degisken Varyanslilik) problemi yok. 
+H1:Heterosce dosticity (Degisken Varyanslilik) problemi vardir.
+
+```{r message=FALSE, warning=FALSE}
+#install.packages("lmtest")
+library(lmtest)
+bptest(model1,data=NSTS)
+```
+
+BREUSCH-PAGAN testimizin sonucuna gore p-value yaklasik=0 <0.05 oldugundan H0 hipotezi reddedilir yani Heteroscedosticity  (degisken varyanslilik) problemi vardir.
+
+## ILISKILI HATALAR (OTOKORELASYON)
+
+H0: Otokorelasyon yoktur.
+H1: Otokorelasyon vardir.
+
+```{r message=FALSE, warning=FALSE}
+library(car)
+library(lmtest)
+dwtest(VWAP~Volume+
+            High+
+           Low+
+            Close+
+            Last ,data=NSTS)
+```
+
+Sonucumuza gore p-value degerimiz 0.2024  cikmistir.P-value degerimiz 0.05'ten buyuk oldugu icin H0 kabul edilir.Bu nedenle Otokorelasyon yoktur deriz.
+
+## OLAGAN DISI GOZLEMLER(AYKIRI GOZLEMLERIN BELIRLENMESI)
+
+### OUTLIER
+
+Model tarafindan iyi tahmin edilemeyen gozlemlere denir.(Hatalari buyuk olan gozlemlere denir.)
+
+Simdi kurulan regresyon modelimizin grafiklerini inceleyelim;
+
+Ilk oncelikle modelimiz icin supheli outlier varsayimlarimiza bakalim; 
+
+```{r message=FALSE, warning=FALSE}
+ols_plot_resid_stud_fit(model1)
+```
+
+Cizdirdigimiz grafikte kirmizi olan gozlemler supheli outlier degerlerimizdir.Bu grafik sadece varsayim yapmaktadir bu nedenle oncellikle library(faraway) ile plot cizdirerek modelimizde outlier suphesi olan gozlemlerine bakalim;
+
+
+```{r message=FALSE, warning=FALSE}
+library(faraway)
+op = par(bg = "honeydew")
+plot(model1)
+```
+
+1.Grafik icin ;
+Artiklara karsi cizdirdigimiz grafige baktigimizda varyanslarin homojen olmadigi gorulmektedir.Outlier suphesi olan gozlemlerimiz 18,77 ve 155. gozlem cikmistir.
+
+2.Grafik icin;
+Normal Q-Q Plot Grafigimize baktigimizda verimiz Q-Q Plot cizgisi uzerinde olmadigindan normal dagilim varsayiminin saglanmadigi gorulmektedir.Outlier suphesi olan gozlemlerimiz 18,77 ve 155. gozlem cikmistir.
+
+3.Grafik icin;
+Standartlastirilmis artiklarin karekokune karsi cizdirdigimiz grafige baktigimizda varyanslarin homojen olmadigi gorulmektedir.Outlier suphesi olan gozlemlerimiz 18,77 ve 155. gozlem cikmistir.
+
+4.Grafik icin;
+Cook's Distance a gore grafikte cikan degerler yani 18,77 ve 155. gozlemlere outlier suphesiyle yaklasilir.
+
+Bu grafiklere baktigimizda 18,77 ve 155. gozlemleri muhtemelen sorunlu olarak tanimlayabiliriz.
+
+Hangi durumlari temsil ettigini gormek icin bu gozlemlere bakmaliyiz;
+
+```{r message=FALSE, warning=FALSE}
+NSTS[c(8, 77,155), ]
+```
+
+Modelimiz icin standartlastirilmis artiklarimiza bakacak olursak;
+
+```{r message=FALSE, warning=FALSE}
+stud <- rstudent(model1)
+head(stud,10)
+```
+
+Standartlastirilmis artiklarimizin mutlakca en buyugune bakmaliyiz.
+
+```{r message=FALSE, warning=FALSE}
+stud[which.max(abs(stud))]
+```
+
+En buyuk standartlastirilmis artik (rstudent) degerim 77. gozlem olup degeri mutlakca 7.088158  dir. Fakat aykiri gozlem midir ?
+
+Benferonni duzleltmesi yaparsak;
+Simdi cut point belirlemeliyiz.
+
+cut point degeri alfa/2n dir.
+rstudentler (n-p-1) serbestlik dereceli t-dagilimina sahiptir.
+(p:degisken sayisi +1 , n : gozlem sayisi)
+
+```{r message=FALSE, warning=FALSE}
+qt(0.05/(length(stud)*2) , (length(NSTS$VWAP)-6-1)) #(alfa/2n),(n-p-1) 
+```
+
+Burada en buyuk standartlastirilmis mutlak artik degerini 7.088158   olarak bulmustuk.
+(|7.088158| > |-3.774908|) oldugundan  77  inci gozlem bizim icin outlierdir.
+
+Bunu hazir kod ile yaptigimizda;
+
+```{r message=FALSE, warning=FALSE}
+library(car)
+outlierTest(model1)
+```
+
+En buyuk aykiri deger 77. gozleme ait olmakla beraber diger outlier degerler ise 155,18 gozlemlere aittir. Veri setimizde aykiri gozlemler mevcuttur.
+
+
+Varsayimlar gerceklesmediginde (hatalar normal dagilmadiginda)ve aykiri gozlemler oldugunda ROBUST REGRESYON yontemi kullanilabilir.
+
+## ROBUST REGRESYON
+
+Tum regresyon varsayimlari gecerli oldugunda , dogrusal regresyon icin normal EKK tahminleri en uygunudur.Bu varsayimlardan bazilari gecersiz oldugunda , EKK regresyonu kotu performans gosterebilir.
+
+Aykiri gozlemler regresyon dogrusunu kendine gore kendine dogru ceker.Bu sekilde parametre tahminlerini olmasi gerektigi yerden cok uzaga tasiyabilir.Model uzerinde etkileri diger gozlemlerden daha fazla olur.Bu durum bizim model tahmin performansimizi dusurur.Bu durumda robust regresyon kullanilir.
+
+Bu gozlemlerin model uzerinde etkisini dusunerek agirliklandirma yapiyoruz.
+
+Birden cok aykiri gozlem varsa modele bundan etkilenebiliyor(maskeleme-swamping).Bu sekilde kurulan modelde yanlis olmus oluyor ve bu modelin artiklari uzerinden yorum yapmak da cok dogru olmuyor.
+
+Aykiri gozlem calismasi yapilacaksa Robust Regresyon Modeli kurup bu regresyon modelinin artiklari uzerinden konusmak daha dogru olacaktir.
+
+Robust Regresyon iteratif yeniden agirlikli En Kucuk Kareler (IRLS) ile yapilir.Robust Regresyon calistirma komutu MASS paketinde rlm'dir.IRLS icin kullanilabilecek cesitli agirlik fonksiyonlari vardir.
+
+Siradan EKK regresyonu ve robust regresyonun sonuclarini karsilastirirken sonuclar cok farkliysa Robust Regresyondan gelen sonuclar kullanilir.Buyuk farkliliklar, model parametrelerinin aykiri degerlerden buyuk oranda etkilendigini gostermektedir.Farkli agirliklandirmalarin avantajlari ve dezavantajlari vardir.Huber agirliklari siddetli aykiri degerlerde zorluklar yasayabilir ve bisquare agirliklar yakinsamada zorluk yasayabilir veya birden fazla cozum verebilir.
+
+Robust Regresyon modelimizi kuralim.  
+
+```{r  message=FALSE, warning=FALSE}
+library(MASS)
+hubermod <- rlm(VWAP~Volume+
+            High+
+           Low+
+            Close+
+            Last  ,data=NSTS)
+summary(hubermod)
+```
+
+Huber agirliklari kullanarak kurdugumuz Robust Regresyon Modelimizin Residual standard error u 2.932 cikmistir.
+EKK modelimizde Residual standard error u 4.374 cikmisti.
+
+Iki Regresyon Modelinin katsayilarini yan yana gosterelim;
+
+```{r message=FALSE, warning=FALSE}
+cbind(coef(model1),coef(hubermod))
+```
+
+Iki modelin ciktilari arasinda gozle gorulur degisimler vardir.
+
+Simdi Robust Regresyon icin standart artiklari inceleyelim;
+
+```{r message=FALSE, warning=FALSE}
+op = par(bg = "lightcyan1")
+halfnorm(residuals(hubermod),3,ylab = "hubermod residuals")
+```
+
+Robust resgresyonun ham artiklari 18,155 ve 77. gozlemler olarak cikmistir.
+
+```{r message=FALSE, warning=FALSE}
+stud <- rstudent(hubermod) #robust regresyonunun standart artiklari
+stud[which.max(abs(stud))]
+```
+
+En buyuk standartlastirilmis artik (rstudent) degerim 77. gozlem olup degeri mutlakca 7.088158  dir.Fakat aykiri gozlem midir ?
+
+Bonferonni duzeltmesi yaparsak;
+
+```{r message=FALSE, warning=FALSE}
+#alfa 0.05
+qt(.05/(length(stud)*2),length(NSTS$VWAP)-6-1) #p=bagimsiz degisken sayisi+1
+```
+
+Burada en buyuk standartlastirilmis mutlak artik degerini 7.088158 olarak bulmustuk.
+(|7.088158| > |-3.774908|) oldugundan  77  inci gozlem bizim icin outlierdir.
+
+Diger outlier degerler;
+
+```{r message=FALSE, warning=FALSE}
+outlierTest(hubermod)
+```
+
+En buyuk aykiri deger 77. gozleme ait olmakla beraber diger outlier deger ise 155. gozleme aittir. 18. gozlemimiz outlier olmaktan cikmistir Swamping olmustur.
+Swamping: Outlier yuzunden aslinda outlier olmayan bir gozlemin outliermis gibi gozukmesidir.
+
+Simdi de Bisquare agirliklandirmasini kullanarak Regresyon Modelimizi kuralim;
+
+```{r  message=FALSE, warning=FALSE}
+bisquaremod <- rlm(VWAP~Volume+
+            High+
+           Low+
+            Close+
+            Last ,data=NSTS,psi=psi.bisquare) 
+summary(bisquaremod)
+```
+
+Bisquare agirliklari kullanarak kurdugumuz Robust Regresyon Modelimizin Residual standard error u 3 cikmistir.
+Huber agirliklari kullanarak kurdugumuz Robust Regresyon Modelimizin Residual standard error u 2.932 cikmistir.
+EKK modelimizde Residual standard error u 4.374 cikmistir.
+
+Huber agirliklari kullanarak kurdugumuz Robust Regresyon Modelimizin Residual standard erroru daha iyi cikmistir.
+
+Simdi tekrardan agirliklara bakalim;
+
+```{r  message=FALSE, warning=FALSE}
+biweights <- data.frame(state= NSTS$Date, resid = bisquaremod$resid, weight = bisquaremod$w)
+biweights2 <- biweights[order(bisquaremod$w), ] 
+biweights2[1:10, ]
+```
+
+Ilk sutun Robust Regresyon Modelinin artiklarini gosterir.
+Resid ler  ne kadar buyukse ona karsilik gelen weight degeri de o kadar kucuk olmaktadir.
+
+Iki modelin residual standart error’lerine bakildigi zaman Huber yontemi daha kucuk residual standart error (2.932) degerine sahiptir.
